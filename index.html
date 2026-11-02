@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wowo Rental — Rental Kendaraan Terpercaya</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Flatpickr date/time picker -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Lucide icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    // Tailwind custom config
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy:   { DEFAULT: '#0f172a', 700: '#1e3a5f', 800: '#162d4a', 900: '#0f172a' },
+            accent: { DEFAULT: '#f97316', hover: '#ea6c0a' },
+            electric:{ DEFAULT: '#2563eb' }
+          },
+          fontFamily: { sans: ['Inter','system-ui','sans-serif'] }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="font-sans bg-gray-50 text-gray-800 antialiased">
+
+<!-- =========================================================
+     OVERLAY SCREENS
+     ========================================================= -->
+
+<!-- Auth Modal -->
+<div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-fadeIn">
+    <div class="bg-gradient-to-r from-navy-800 to-navy-700 px-8 py-6 text-white text-center">
+      <h2 class="text-2xl font-bold">Masuk ke Wowo Rental</h2>
+      <p class="text-blue-200 text-sm mt-1">Daftar atau masuk untuk mulai menyewa</p>
+    </div>
+    <div class="px-8 py-6 space-y-3">
+      <!-- Social auth buttons -->
+      <button onclick="handleSocialAuth('google')" class="auth-social-btn bg-white border-2 border-gray-200 hover:border-red-400 hover:bg-red-50 text-gray-700 w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-6 h-6" />
+        <span>Lanjutkan dengan Google</span>
+      </button>
+      <button onclick="handleSocialAuth('facebook')" class="auth-social-btn bg-white border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 text-gray-700 w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all">
+        <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" class="w-6 h-6" />
+        <span>Lanjutkan dengan Facebook</span>
+      </button>
+
+      <div class="flex items-center gap-3 py-1">
+        <hr class="flex-1 border-gray-200" /><span class="text-gray-400 text-sm">atau</span><hr class="flex-1 border-gray-200" />
+      </div>
+
+      <!-- Phone form -->
+      <div id="phoneStep1">
+        <label class="block text-sm font-medium text-gray-600 mb-1">Nomor Telepon</label>
+        <div class="flex gap-2">
+          <span class="bg-gray-100 border border-gray-200 rounded-xl px-3 py-3 text-sm font-semibold text-gray-600">+62</span>
+          <input id="phoneInput" type="tel" placeholder="812-3456-7890" class="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <button onclick="sendOTP()" class="mt-3 w-full bg-accent hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors">Kirim Kode OTP</button>
+      </div>
+      <div id="phoneStep2" class="hidden">
+        <label class="block text-sm font-medium text-gray-600 mb-1">Kode OTP</label>
+        <input id="otpInput" type="text" maxlength="6" placeholder="Masukkan 6 digit kode" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 tracking-widest text-center text-lg font-bold" />
+        <button onclick="verifyOTP()" class="mt-3 w-full bg-accent hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors">Verifikasi & Masuk</button>
+        <p class="text-center text-xs text-gray-400 mt-2">Kode dikirim ke nomor Anda. <button onclick="showPhoneStep1()" class="text-blue-500 underline">Ubah nomor</button></p>
+      </div>
+
+      <p class="text-center text-xs text-gray-400 pt-1">Dengan masuk, Anda menyetujui <a href="#" class="text-blue-500 underline">Syarat & Ketentuan</a> kami.</p>
+    </div>
+    <button onclick="closeModal('authModal')" class="absolute top-4 right-4 text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+  </div>
+</div>
+
+<!-- Vehicle Detail Modal -->
+<div id="detailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[92vh] overflow-y-auto animate-fadeIn">
+    <div id="detailContent" class="p-6"></div>
+    <button onclick="closeModal('detailModal')" class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full w-9 h-9 flex items-center justify-center text-xl font-bold">&times;</button>
+  </div>
+</div>
+
+<!-- Booking Modal -->
+<div id="bookingModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 max-h-[92vh] overflow-y-auto animate-fadeIn">
+    <div class="bg-gradient-to-r from-navy-800 to-navy-700 px-6 py-5 text-white rounded-t-2xl">
+      <h3 class="text-xl font-bold">Konfirmasi Pesanan</h3>
+      <p class="text-blue-200 text-sm" id="bookingModalSubtitle">Lengkapi data pemesanan Anda</p>
+    </div>
+    <div id="bookingContent" class="p-6"></div>
+    <button onclick="closeModal('bookingModal')" class="absolute top-4 right-4 text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" class="fixed inset-0 z-40 bg-gray-100 hidden overflow-y-auto">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-navy-900 text-white flex flex-col min-h-screen fixed top-0 left-0 bottom-0 z-50">
+      <div class="px-6 py-5 border-b border-white/10">
+        <span class="text-xl font-bold text-white">🚗 Wowo Admin</span>
+      </div>
+      <nav class="flex-1 px-4 py-4 space-y-1">
+        <button onclick="showAdminTab('dashboard')" class="admin-nav-btn active w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
+        <button onclick="showAdminTab('fleet')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="car" class="w-4 h-4"></i> Armada</button>
+        <button onclick="showAdminTab('bookings')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="calendar-check" class="w-4 h-4"></i> Pesanan</button>
+        <button onclick="showAdminTab('calendar')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="calendar-days" class="w-4 h-4"></i> Kalender</button>
+        <button onclick="showAdminTab('verification')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="shield-check" class="w-4 h-4"></i> Verifikasi</button>
+        <button onclick="showAdminTab('drivers')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="users" class="w-4 h-4"></i> Sopir</button>
+        <button onclick="showAdminTab('maintenance')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="wrench" class="w-4 h-4"></i> Perawatan</button>
+        <button onclick="showAdminTab('reports')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> Laporan</button>
+        <button onclick="showAdminTab('gps')" class="admin-nav-btn w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-3"><i data-lucide="map-pin" class="w-4 h-4"></i> GPS Tracking</button>
+      </nav>
+      <div class="px-4 py-4 border-t border-white/10">
+        <button onclick="closeAdminPanel()" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-300 hover:bg-red-900/30 flex items-center gap-3"><i data-lucide="log-out" class="w-4 h-4"></i> Keluar Admin</button>
+      </div>
+    </aside>
+    <!-- Admin Content -->
+    <main class="ml-64 flex-1 p-6" id="adminContent"></main>
+  </div>
+</div>
+
+<!-- =========================================================
+     MAIN WEBSITE
+     ========================================================= -->
+<div id="mainSite">
+
+  <!-- NAVBAR -->
+  <header class="bg-navy-900 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="#" class="flex items-center gap-2 text-white font-bold text-xl" onclick="scrollToTop()">
+          <span class="text-accent text-2xl">🚗</span> Wowo Rental
+        </a>
+        <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-blue-100">
+          <a href="#search" class="nav-link hover:text-white transition-colors">Cari Kendaraan</a>
+          <a href="#fleet" class="nav-link hover:text-white transition-colors">Armada</a>
+          <a href="#howto" class="nav-link hover:text-white transition-colors">Cara Pesan</a>
+          <a href="#contact" class="nav-link hover:text-white transition-colors">Kontak</a>
+          <button onclick="openModal('authModal')" id="navAuthBtn" class="bg-accent hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">Masuk</button>
+          <span id="navUserDisplay" class="hidden text-white font-semibold">
+            <span id="navUserName" class="mr-2"></span>
+            <button onclick="logout()" class="text-blue-300 hover:text-white text-xs underline">Keluar</button>
+          </span>
+          <button onclick="openAdminPanel()" class="ml-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors border border-white/20">⚙ Admin</button>
+        </nav>
+        <!-- Mobile menu btn -->
+        <button id="mobileMenuBtn" class="md:hidden text-white p-2" onclick="toggleMobileMenu()">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+      </div>
+    </div>
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden md:hidden bg-navy-800 px-4 pb-4 space-y-2 text-sm">
+      <a href="#search" class="block py-2 text-blue-100 hover:text-white">Cari Kendaraan</a>
+      <a href="#fleet" class="block py-2 text-blue-100 hover:text-white">Armada</a>
+      <a href="#howto" class="block py-2 text-blue-100 hover:text-white">Cara Pesan</a>
+      <a href="#contact" class="block py-2 text-blue-100 hover:text-white">Kontak</a>
+      <button onclick="openModal('authModal')" class="block w-full text-left py-2 text-accent font-semibold">Masuk / Daftar</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero-section relative bg-navy-900 text-white overflow-hidden" style="min-height:520px">
+    <div class="hero-bg-overlay absolute inset-0"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 flex flex-col items-center text-center">
+      <span class="inline-block bg-accent/20 text-accent border border-accent/30 text-xs font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-widest">Rental Kendaraan Terpercaya</span>
+      <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4">Jelajahi Lebih Jauh<br/><span class="text-accent">Bersama Wowo Rental</span></h1>
+      <p class="text-blue-200 text-lg md:text-xl max-w-xl mb-8">Armada lengkap, harga transparan, proses pesan mudah. Motor, City Car, SUV, MPV, hingga Luxury — tersedia 24/7.</p>
+      <div class="flex flex-wrap gap-4 justify-center">
+        <a href="#search" class="bg-accent hover:bg-orange-600 text-white font-bold px-8 py-3.5 rounded-xl text-base transition-all shadow-lg hover:shadow-orange-500/30">Pesan Sekarang</a>
+        <a href="#fleet" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-8 py-3.5 rounded-xl text-base transition-all">Lihat Armada</a>
+      </div>
+    </div>
+    <!-- Stats bar -->
+    <div class="relative bg-white/10 backdrop-blur-sm border-t border-white/10 py-4">
+      <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div><p class="text-2xl font-extrabold text-accent">50+</p><p class="text-blue-200 text-xs">Unit Armada</p></div>
+        <div><p class="text-2xl font-extrabold text-accent">5000+</p><p class="text-blue-200 text-xs">Pelanggan Puas</p></div>
+        <div><p class="text-2xl font-extrabold text-accent">24/7</p><p class="text-blue-200 text-xs">Layanan CS</p></div>
+        <div><p class="text-2xl font-extrabold text-accent">5★</p><p class="text-blue-200 text-xs">Rating Google</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEARCH / BOOKING WIDGET -->
+  <section id="search" class="py-10 bg-gradient-to-b from-navy-900 to-gray-50">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 -mt-6">
+        <h2 class="text-xl font-bold text-navy-900 mb-5 flex items-center gap-2"><i data-lucide="search" class="w-5 h-5 text-accent"></i> Cek Ketersediaan Kendaraan</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Pickup location -->
+          <div>
+            <label class="form-label">Lokasi Penjemputan</label>
+            <div class="relative">
+              <i data-lucide="map-pin" class="absolute left-3 top-3.5 w-4 h-4 text-gray-400"></i>
+              <input id="pickupLocation" type="text" placeholder="Kota / Alamat" class="form-input pl-9" />
+            </div>
+          </div>
+          <!-- Drop-off location -->
+          <div>
+            <label class="form-label">Lokasi Pengembalian</label>
+            <div class="relative">
+              <i data-lucide="map-pin" class="absolute left-3 top-3.5 w-4 h-4 text-gray-400"></i>
+              <input id="dropoffLocation" type="text" placeholder="Kota / Alamat" class="form-input pl-9" />
+            </div>
+          </div>
+          <!-- Rental type -->
+          <div>
+            <label class="form-label">Jenis Sewa</label>
+            <select id="rentalType" class="form-input">
+              <option value="lepas_kunci">Lepas Kunci (Tanpa Sopir)</option>
+              <option value="dengan_sopir">Dengan Sopir</option>
+            </select>
+          </div>
+          <!-- Start date -->
+          <div>
+            <label class="form-label">Tanggal & Jam Mulai</label>
+            <div class="relative">
+              <i data-lucide="calendar" class="absolute left-3 top-3.5 w-4 h-4 text-gray-400"></i>
+              <input id="startDatetime" type="text" placeholder="Pilih tanggal & jam" class="form-input pl-9 cursor-pointer" readonly />
+            </div>
+          </div>
+          <!-- End date -->
+          <div>
+            <label class="form-label">Tanggal & Jam Selesai</label>
+            <div class="relative">
+              <i data-lucide="calendar" class="absolute left-3 top-3.5 w-4 h-4 text-gray-400"></i>
+              <input id="endDatetime" type="text" placeholder="Pilih tanggal & jam" class="form-input pl-9 cursor-pointer" readonly />
+            </div>
+          </div>
+          <!-- Vehicle type filter -->
+          <div>
+            <label class="form-label">Tipe Kendaraan</label>
+            <select id="vehicleTypeSearch" class="form-input">
+              <option value="">Semua Tipe</option>
+              <option value="City Car">City Car</option>
+              <option value="SUV">SUV</option>
+              <option value="MPV">MPV</option>
+              <option value="Motor">Motor</option>
+              <option value="Luxury">Luxury</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-5 flex flex-wrap gap-3 items-center justify-between">
+          <div id="searchDurationInfo" class="text-sm text-gray-500"></div>
+          <button onclick="searchVehicles()" class="bg-accent hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all shadow flex items-center gap-2">
+            <i data-lucide="search" class="w-4 h-4"></i> Cari Kendaraan
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLEET CATALOG -->
+  <section id="fleet" class="py-16 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-10">
+        <span class="section-badge">Katalog Armada</span>
+        <h2 class="section-title mt-2">Pilih Kendaraan Impianmu</h2>
+        <p class="section-sub">Armada terawat, diasuransikan, siap antar ke lokasi Anda</p>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="bg-white rounded-2xl shadow p-4 mb-8 flex flex-wrap gap-3 items-center">
+        <span class="text-sm font-semibold text-gray-500 mr-1">Filter:</span>
+        <!-- Type tabs -->
+        <div class="flex flex-wrap gap-2" id="typeFilters">
+          <button onclick="setFilter('type','')" class="filter-btn active" data-type="">Semua</button>
+          <button onclick="setFilter('type','City Car')" class="filter-btn" data-type="City Car">City Car</button>
+          <button onclick="setFilter('type','SUV')" class="filter-btn" data-type="SUV">SUV</button>
+          <button onclick="setFilter('type','MPV')" class="filter-btn" data-type="MPV">MPV</button>
+          <button onclick="setFilter('type','Motor')" class="filter-btn" data-type="Motor">Motor</button>
+          <button onclick="setFilter('type','Luxury')" class="filter-btn" data-type="Luxury">Luxury</button>
+        </div>
+        <div class="w-px h-6 bg-gray-200 hidden md:block"></div>
+        <!-- Transmission -->
+        <select id="transFilter" onchange="applyFilters()" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Transmisi</option>
+          <option value="Manual">Manual</option>
+          <option value="Matic">Matic</option>
+        </select>
+        <!-- Passenger -->
+        <select id="passengerFilter" onchange="applyFilters()" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Kapasitas</option>
+          <option value="2">2 Orang</option>
+          <option value="4">4 Orang</option>
+          <option value="7">7 Orang</option>
+          <option value="8">8+ Orang</option>
+        </select>
+        <!-- Price range -->
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+          <span>Harga:</span>
+          <input type="range" id="maxPriceFilter" min="100000" max="2000000" step="50000" value="2000000" oninput="updatePriceLabel()" onchange="applyFilters()" class="w-28 accent-orange-500" />
+          <span id="priceLabel" class="font-semibold text-accent w-28">≤ Rp 2.000.000</span>
+        </div>
+        <!-- Status -->
+        <select id="statusFilter" onchange="applyFilters()" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Semua Status</option>
+          <option value="Tersedia">Tersedia</option>
+          <option value="Tersewa">Tersewa</option>
+        </select>
+      </div>
+
+      <!-- Fleet Grid -->
+      <div id="fleetGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Populated by JS -->
+      </div>
+      <p id="noResultsMsg" class="hidden text-center text-gray-400 py-12 text-lg">Tidak ada kendaraan yang sesuai filter.</p>
+    </div>
+  </section>
+
+  <!-- HOW TO ORDER -->
+  <section id="howto" class="py-16 bg-white">
+    <div class="max-w-5xl mx-auto px-4 text-center">
+      <span class="section-badge">Mudah & Cepat</span>
+      <h2 class="section-title mt-2">Cara Memesan</h2>
+      <p class="section-sub">4 langkah sederhana untuk mulai perjalanan Anda</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-10">
+        <div class="howto-card">
+          <div class="howto-icon bg-blue-100 text-blue-600"><i data-lucide="search" class="w-6 h-6"></i></div>
+          <p class="font-semibold mt-3 text-navy-900">1. Cari Kendaraan</p>
+          <p class="text-gray-500 text-sm mt-1">Masukkan lokasi, tanggal, & filter kendaraan sesuai kebutuhan</p>
+        </div>
+        <div class="howto-card">
+          <div class="howto-icon bg-orange-100 text-orange-500"><i data-lucide="file-text" class="w-6 h-6"></i></div>
+          <p class="font-semibold mt-3 text-navy-900">2. Isi Data & Dokumen</p>
+          <p class="text-gray-500 text-sm mt-1">Upload KTP & SIM, pilih add-ons, konfirmasi pesanan</p>
+        </div>
+        <div class="howto-card">
+          <div class="howto-icon bg-green-100 text-green-600"><i data-lucide="credit-card" class="w-6 h-6"></i></div>
+          <p class="font-semibold mt-3 text-navy-900">3. Bayar DP / Lunas</p>
+          <p class="text-gray-500 text-sm mt-1">Transfer Bank, QRIS, e-Wallet, atau Kartu Kredit</p>
+        </div>
+        <div class="howto-card">
+          <div class="howto-icon bg-purple-100 text-purple-600"><i data-lucide="car" class="w-6 h-6"></i></div>
+          <p class="font-semibold mt-3 text-navy-900">4. Nikmati Perjalanan</p>
+          <p class="text-gray-500 text-sm mt-1">Kendaraan siap diantarkan ke lokasi penjemputan Anda</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="py-16 bg-gray-50">
+    <div class="max-w-5xl mx-auto px-4 text-center">
+      <span class="section-badge">Ulasan Pelanggan</span>
+      <h2 class="section-title mt-2">Apa Kata Mereka?</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10" id="testimonialsGrid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="py-16 bg-navy-900 text-white">
+    <div class="max-w-5xl mx-auto px-4 grid md:grid-cols-2 gap-10 items-center">
+      <div>
+        <span class="section-badge-light">Hubungi Kami</span>
+        <h2 class="text-3xl font-extrabold mt-2 mb-4">Butuh Bantuan?</h2>
+        <p class="text-blue-200 mb-6">Tim kami siap membantu 24 jam. Hubungi via WhatsApp, email, atau kunjungi kantor kami.</p>
+        <div class="space-y-3 text-blue-100 text-sm">
+          <div class="flex items-center gap-3"><i data-lucide="phone" class="w-5 h-5 text-accent flex-shrink-0"></i><span>+62 812-3456-7890</span></div>
+          <div class="flex items-center gap-3"><i data-lucide="mail" class="w-5 h-5 text-accent flex-shrink-0"></i><span>halo@woworental.id</span></div>
+          <div class="flex items-center gap-3"><i data-lucide="map-pin" class="w-5 h-5 text-accent flex-shrink-0"></i><span>Jalan Nasional No.17, Yogyakarta</span></div>
+          <div class="flex items-center gap-3"><i data-lucide="clock" class="w-5 h-5 text-accent flex-shrink-0"></i><span>Senin–Minggu, 24 Jam</span></div>
+        </div>
+      </div>
+      <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+        <h3 class="font-bold mb-4">Kirim Pesan</h3>
+        <div class="space-y-3">
+          <input type="text" placeholder="Nama Anda" class="contact-input" />
+          <input type="text" placeholder="Nomor HP / Email" class="contact-input" />
+          <textarea placeholder="Pesan Anda..." rows="4" class="contact-input resize-none"></textarea>
+          <button onclick="submitContactForm()" class="w-full bg-accent hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors">Kirim Pesan</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-navy-900 border-t border-white/10 text-blue-200 text-sm py-8">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="font-bold text-white text-base">🚗 Wowo Rental</p>
+      <p>© 2025 Wowo Rental. Semua hak dilindungi.</p>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-white transition-colors">Syarat & Ketentuan</a>
+        <a href="#" class="hover:text-white transition-colors">Kebijakan Privasi</a>
+        <a href="#" class="hover:text-white transition-colors">FAQ</a>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- end #mainSite -->
+
+<!-- =========================================================
+     FLOATING BUTTONS
+     ========================================================= -->
+<div class="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+  <!-- WhatsApp -->
+  <a href="https://wa.me/6281234567890?text=Halo%20Wowo%20Rental,%20saya%20ingin%20bertanya%20tentang%20sewa%20kendaraan." target="_blank"
+     class="floating-btn bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/40"
+     title="Chat via WhatsApp">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+    </svg>
+  </a>
+  <!-- Live Chat / scroll top -->
+  <button onclick="scrollToTop()" class="floating-btn bg-navy-800 hover:bg-navy-700 text-white shadow-lg border border-white/10" title="Ke Atas">
+    <i data-lucide="chevron-up" class="w-5 h-5"></i>
+  </button>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-24 right-6 bg-navy-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl z-50 hidden transition-all duration-300 flex items-center gap-3 max-w-xs">
+  <i data-lucide="check-circle" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
+  <span id="toastMsg">Berhasil!</span>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
