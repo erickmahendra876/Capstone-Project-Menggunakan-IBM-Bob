@@ -1,4 +1,3 @@
-# Capstone-Project-Menggunakan-IBM-Bob
 
 Sistem Pemesanan dan Manajemen Rental Kendaraan "Wowo Rental"
 
@@ -10,6 +9,7 @@ Tujuan Project Wowo Rental :
 3. Otomatisasi Layanan & Keamanan: Meningkatkan efisiensi bisnis melalui fitur kalkulasi biaya otomatis, verifikasi dokumen identitas penyewa yang ketat, serta pemantauan armada secara real-time.
 
 Fitur yang Di implementasikan :
+
 🧑‍💻 Sisi Pelanggan
 - Autentikasi — Login Google, Facebook, atau Nomor Telepon (simulasi OTP 6 digit)
 - Search Widget — Input lokasi pick-up & drop-off, Date/Time Picker (Flatpickr), filter tipe & jenis sewa
